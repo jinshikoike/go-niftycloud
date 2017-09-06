@@ -3,7 +3,7 @@ package niftycloud_test
 import (
 	"time"
 
-	"github.com/higebu/go-niftycloud/niftycloud"
+	"github.com/jinshikoike/go-niftycloud/niftycloud"
 	. "gopkg.in/check.v1"
 )
 

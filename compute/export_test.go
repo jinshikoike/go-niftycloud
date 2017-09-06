@@ -1,7 +1,7 @@
 package compute
 
 import (
-	"github.com/higebu/go-niftycloud/niftycloud"
+	"github.com/jinshikoike/go-niftycloud/niftycloud"
 	"time"
 )
 

@@ -8,7 +8,7 @@ import (
 	"encoding/base64"
 	"encoding/xml"
 	"fmt"
-	"github.com/higebu/go-niftycloud/compute"
+	"github.com/jinshikoike/go-niftycloud/compute"
 	"io"
 	"net"
 	"net/http"

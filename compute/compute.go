@@ -22,7 +22,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/higebu/go-niftycloud/niftycloud"
+	"github.com/jinshikoike/go-niftycloud/niftycloud"
 )
 
 const debug = true

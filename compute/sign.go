@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/higebu/go-niftycloud/niftycloud"
+	"github.com/jinshikoike/go-niftycloud/niftycloud"
 )
 
 // NIFTY Cloud Compute ReST authentication docs: http://cloud.nifty.com/api/rest/authenticate.htm

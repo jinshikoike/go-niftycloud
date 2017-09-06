@@ -2,7 +2,7 @@ package niftycloud_test
 
 import (
 	"fmt"
-	"github.com/higebu/go-niftycloud/niftycloud"
+	"github.com/jinshikoike/go-niftycloud/niftycloud"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"

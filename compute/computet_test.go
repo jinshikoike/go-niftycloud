@@ -5,10 +5,10 @@ import (
 	"regexp"
 	"sort"
 
-	"github.com/higebu/go-niftycloud/compute"
-	"github.com/higebu/go-niftycloud/compute/computetest"
-	"github.com/higebu/go-niftycloud/niftycloud"
-	"github.com/higebu/go-niftycloud/testutil"
+	"github.com/jinshikoike/go-niftycloud/compute"
+	"github.com/jinshikoike/go-niftycloud/compute/computetest"
+	"github.com/jinshikoike/go-niftycloud/niftycloud"
+	"github.com/jinshikoike/go-niftycloud/testutil"
 	. "gopkg.in/check.v1"
 )
 

@@ -1,8 +1,8 @@
 package compute_test
 
 import (
-	"github.com/higebu/go-niftycloud/compute"
-	"github.com/higebu/go-niftycloud/niftycloud"
+	"github.com/jinshikoike/go-niftycloud/compute"
+	"github.com/jinshikoike/go-niftycloud/niftycloud"
 	. "gopkg.in/check.v1"
 )
 
