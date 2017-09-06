@@ -327,6 +327,8 @@ func (compute *Compute) RunInstances(options *RunInstancesOptions) (resp *RunIns
 
 	if options.DisableAPITermination {
 		params["DisableApiTermination"] = "true"
+	} else {
+		params["DisableApiTermination"] = "false"
 	}
 
 	i, j := 1, 1
@@ -1405,6 +1407,8 @@ func (compute *Compute) ModifyInstance(instId string, options *ModifyInstance) (
 
 	if options.DisableAPITermination {
 		params["DisableApiTermination.Value"] = "true"
+	} else {
+		params["DisableApiTermination.Value"] = "false"
 	}
 
 	if options.UserData != nil {
