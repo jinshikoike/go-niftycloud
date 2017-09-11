@@ -1069,9 +1069,8 @@ type ImportKeyPairResp struct {
 func (compute *Compute) ImportKeyPair(KeyName string, PublicKeyMaterial string) (resp *ImportKeyPairResp, err error) {
 	params := makeParams("ImportKeyPair")
 	params["KeyName"] = KeyName
-	params["PublicKeyMaterial"] = PublicKeyMaterial
 
-	b64PublicKeyMaterial := make([]byte, b64.EncodedLen(len(PublicKeyMaterial)))
+	b64PublicKeyMaterial := make([]byte, b64.EncodedLen(len([]byte(PublicKeyMaterial))))
 	b64.Encode(b64PublicKeyMaterial, []byte(PublicKeyMaterial))
 	params["PublicKeyMaterial"] = string(b64PublicKeyMaterial)
 
@@ -1080,8 +1079,8 @@ func (compute *Compute) ImportKeyPair(KeyName string, PublicKeyMaterial string) 
 	if err == nil {
 		resp.KeyFingerprint = strings.TrimSpace(resp.KeyFingerprint)
 	}
-	return
 
+	return
 }
 
 // DeleteKeyPair deletes a key pair.
