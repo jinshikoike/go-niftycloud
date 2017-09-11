@@ -1086,16 +1086,17 @@ func (compute *Compute) ImportKeyPair(KeyName string, PublicKeyMaterial string) 
 	b64.Encode(b64PublicKeyMaterial, []byte(PublicKeyMaterial))
 	params["PublicKeyMaterial"] = string(b64PublicKeyMaterial)
 
-	//params["Version"] = "2.2"
-	//params["Timestamp"] = timeNow().In(time.UTC).Format(time.RFC3339)
-	//endpoint, err := url.Parse(compute.Region.ComputeEndpoint)
-	//sign(compute.Auth, "POST", endpoint.Path, params, endpoint.Host)
+	params["Version"] = "2.2"
+	params["Timestamp"] = timeNow().In(time.UTC).Format(time.RFC3339)
+	endpoint, err := url.Parse(compute.Region.ComputeEndpoint)
+	sign(compute.Auth, "POST", endpoint.Path, params, endpoint.Host)
+
 
 	resp = &ImportKeyPairResp{}
 	err = compute.query(params, resp, "POST")
-	if err == nil {
-		resp.KeyFingerprint = strings.TrimSpace(resp.KeyFingerprint)
-	}
+	// if err == nil {
+	// 	resp.KeyFingerprint = strings.TrimSpace(resp.KeyFingerprint)
+	// }
 
 	return
 }
