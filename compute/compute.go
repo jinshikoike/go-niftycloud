@@ -1059,6 +1059,27 @@ func (compute *Compute) CreateKeyPair(keyName string) (resp *CreateKeyPairResp, 
 	return
 }
 
+type ImportKeyPairResp struct {
+	RequestId      string `xml:"requestId"`
+	KeyName        string `xml:"keyName"`
+	KeyFingerPrint string `xml:keyFingerprint`
+}
+
+// ImportKeyPair import a new key pair and returns response
+func (compute *Compute) ImportKeyPair(KeyName, PublicKeyMaterial) (resp *ImportKeyPairResp, err error) {
+	params := makeParams("ImportKeyPair")
+	params["KeyName"] = KeyName
+	params["PublicKeyMaterial"] = PublicKeyMaterial
+
+	resp = &ImportKeyPairResp{}
+	err = compute.query(params, resp)
+	if err == nil {
+		resp.KeyFingerprint = strings.TrimSpace(resp.KeyFingerprint)
+	}
+	return
+
+}
+
 // DeleteKeyPair deletes a key pair.
 //
 // See http://cloud.nifty.com/api/rest/DeleteKeyPair.htm
