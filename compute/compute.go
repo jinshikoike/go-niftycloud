@@ -1072,7 +1072,7 @@ func (compute *Compute) ImportKeyPair(KeyName string, PublicKeyMaterial string) 
 	params["PublicKeyMaterial"] = PublicKeyMaterial
 
 	b64PublicKeyMaterial := make([]byte, b64.EncodedLen(len(PublicKeyMaterial)))
-	b64.Encode(b64PublicKeyMaterial, []byt(PublicKeyMaterial))
+	b64.Encode(b64PublicKeyMaterial, []byte(PublicKeyMaterial))
 	params["PublicKeyMaterial"] = string(b64PublicKeyMaterial)
 
 	resp = &ImportKeyPairResp{}
