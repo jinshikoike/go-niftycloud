@@ -143,7 +143,17 @@ func (compute *Compute) query(params map[string]string, resp interface{}, method
 		log.Printf("get { %v } -> {\n", endpoint.String())
 	}
 
-	r, err := compute.httpClient.Get(endpoint.String())
+	var err error
+	var r *http.Response
+
+	if method == "GET" {
+		r, err = compute.httpClient.Get(endpoint.String())
+	}
+
+	if method == "POST" {
+		r, err = compute.httpClient.Post(endpoint.String())
+	}
+
 	if err != nil {
 		return err
 	}
