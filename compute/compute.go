@@ -124,7 +124,10 @@ type xmlErrors struct {
 
 var timeNow = time.Now
 
-func (compute *Compute) query(params map[string]string, resp interface{}) error {
+func (compute *Compute) query(params map[string]string, resp interface{}, method string) error {
+	if method == "" {
+		method = "GET"
+	}
 	params["Version"] = "2.2"
 	params["Timestamp"] = timeNow().In(time.UTC).Format(time.RFC3339)
 	endpoint, err := url.Parse(compute.Region.ComputeEndpoint)
@@ -134,7 +137,7 @@ func (compute *Compute) query(params map[string]string, resp interface{}) error 
 	if endpoint.Path == "" {
 		endpoint.Path = "/"
 	}
-	sign(compute.Auth, "GET", endpoint.Path, params, endpoint.Host)
+	sign(compute.Auth, method, endpoint.Path, params, endpoint.Host)
 	endpoint.RawQuery = multimap(params).Encode()
 	if debug {
 		log.Printf("get { %v } -> {\n", endpoint.String())
@@ -1074,8 +1077,13 @@ func (compute *Compute) ImportKeyPair(KeyName string, PublicKeyMaterial string) 
 	b64.Encode(b64PublicKeyMaterial, []byte(PublicKeyMaterial))
 	params["PublicKeyMaterial"] = string(b64PublicKeyMaterial)
 
+	//params["Version"] = "2.2"
+	//params["Timestamp"] = timeNow().In(time.UTC).Format(time.RFC3339)
+	//endpoint, err := url.Parse(compute.Region.ComputeEndpoint)
+	//sign(compute.Auth, "POST", endpoint.Path, params, endpoint.Host)
+
 	resp = &ImportKeyPairResp{}
-	err = compute.query(params, resp)
+	err = compute.query(params, resp, "POST")
 	if err == nil {
 		resp.KeyFingerprint = strings.TrimSpace(resp.KeyFingerprint)
 	}
