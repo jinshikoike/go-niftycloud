@@ -1066,7 +1066,7 @@ type ImportKeyPairResp struct {
 }
 
 // ImportKeyPair import a new key pair and returns response
-func (compute *Compute) ImportKeyPair(KeyName, PublicKeyMaterial) (resp *ImportKeyPairResp, err error) {
+func (compute *Compute) ImportKeyPair(KeyName string, PublicKeyMaterial string) (resp *ImportKeyPairResp, err error) {
 	params := makeParams("ImportKeyPair")
 	params["KeyName"] = KeyName
 	params["PublicKeyMaterial"] = PublicKeyMaterial
