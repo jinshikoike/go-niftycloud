@@ -1062,7 +1062,7 @@ func (compute *Compute) CreateKeyPair(keyName string) (resp *CreateKeyPairResp, 
 type ImportKeyPairResp struct {
 	RequestId      string `xml:"requestId"`
 	KeyName        string `xml:"keyName"`
-	KeyFingerPrint string `xml:keyFingerprint`
+	KeyFingerprint string `xml:keyFingerprint`
 }
 
 // ImportKeyPair import a new key pair and returns response
