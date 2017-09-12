@@ -145,17 +145,13 @@ func (compute *Compute) query(params map[string]string, resp interface{}, method
 
 	var r *http.Response
 
-	if method == "GET" {
-		r, err = compute.httpClient.Get(endpoint.String())
-	}
+	//if method == "GET" {
+	r, err = compute.httpClient.Get(endpoint.String())
+	//}
 
-	if method == "POST" {
-		r, err = compute.httpClient.Post(endpoint.String())
-	}
-
-	if err != nil {
-		return err
-	}
+	// if err != nil {
+	// 	return err
+	// }
 	defer r.Body.Close()
 
 	if debug {
@@ -1086,19 +1082,70 @@ func (compute *Compute) ImportKeyPair(KeyName string, PublicKeyMaterial string) 
 	b64.Encode(b64PublicKeyMaterial, []byte(PublicKeyMaterial))
 	params["PublicKeyMaterial"] = string(b64PublicKeyMaterial)
 
-	params["Version"] = "2.2"
-	params["Timestamp"] = timeNow().In(time.UTC).Format(time.RFC3339)
-	endpoint, err := url.Parse(compute.Region.ComputeEndpoint)
-	sign(compute.Auth, "POST", endpoint.Path, params, endpoint.Host)
+	// params["Version"] = "2.2"
+	// params["Timestamp"] = timeNow().In(time.UTC).Format(time.RFC3339)
+	// endpoint, err := url.Parse(compute.Region.ComputeEndpoint)
+	// sign(compute.Auth, "POST", endpoint.Path, params, endpoint.Host)
 
+	// fmt.Println("--------------------------------------------------------------------")
+	// fmt.Println(params["Signature"])
+	// fmt.Println("--------------------------------------------------------------------")
 
 	resp = &ImportKeyPairResp{}
-	err = compute.query(params, resp, "POST")
+	// err = compute.query(params, resp, "POST")
 	// if err == nil {
 	// 	resp.KeyFingerprint = strings.TrimSpace(resp.KeyFingerprint)
 	// }
 
-	return
+	params["Version"] = "2.2"
+	params["Timestamp"] = timeNow().In(time.UTC).Format(time.RFC3339)
+	params["AccessKeyId"] = compute.Auth.AccessKey
+	params["SignatureVersion"] = "0"
+	//params["SignatureMethod"] = "HmacSHA1"
+	endpoint, err := url.Parse(compute.Region.ComputeEndpoint)
+	if err != nil {
+		return nil, err
+	}
+	if endpoint.Path == "" {
+		endpoint.Path = "/"
+	}
+	//sign(compute.Auth, method, endpoint.Path, params, endpoint.Host)
+	signV0(compute.Auth, params)
+	endpoint.RawQuery = multimap(params).Encode()
+	if debug {
+		log.Printf("get { %v } -> {\n", endpoint.String())
+	}
+
+	var r *http.Response
+
+	//if method == "GET" {
+	r, err = compute.httpClient.Get(endpoint.String())
+	// postBody := ""
+	// for _, key := range params {
+	// 	postBody = postBody
+	// }
+	// r, err = compute.httpcClient.Post(endpoint.String, "application/x-www-form-urlencoded")
+	//}
+
+	// if err != nil {
+	// 	return err
+	// }
+	defer r.Body.Close()
+
+	if debug {
+		dump, _ := httputil.DumpResponse(r, true)
+		log.Printf("response:\n")
+		log.Printf("%v\n}\n", string(dump))
+	}
+	if r.StatusCode != 200 {
+		return nil, buildError(r)
+	}
+	err = xml.NewDecoder(r.Body).Decode(resp)
+	if err != nil {
+		log.Printf("Error while parsing -> %s", err)
+	}
+	return nil, err
+
 }
 
 // DeleteKeyPair deletes a key pair.
