@@ -2,6 +2,7 @@ package compute
 
 import (
 	"crypto/hmac"
+	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/base64"
 	"sort"
@@ -42,4 +43,17 @@ func sign(auth niftycloud.Auth, method, path string, params map[string]string, h
 	b64.Encode(signature, hash.Sum(nil))
 
 	params["Signature"] = string(signature)
+}
+
+func generateSignV0(secretAccessKey string, action string, timeStamp string) string {
+	stringToSign := action + timeStamp
+	hash := hmac.New(sha1.New, []byte(secretAccessKey))
+	hash.Write([]byte(stringToSign))
+	signature := make([]byte, b64.EncodedLen(hash.Size()))
+	b64.Encode(signature, hash.Sum(nil))
+	return string(signature)
+}
+
+func signV0(auth niftycloud.Auth, params map[string]string) {
+	params["Signature"] = generateSignV0(auth.SecretKey, params["Action"], params["Timestamp"])
 }
