@@ -145,13 +145,13 @@ func (compute *Compute) query(params map[string]string, resp interface{}, method
 
 	var r *http.Response
 
-	if method == "GET" {
-		r, err = compute.httpClient.Get(endpoint.String())
-	}
+	//if method == "GET" {
+	r, err = compute.httpClient.Get(endpoint.String())
+	//}
 
-	if method == "POST" {
-		r, err = compute.httpClient.Post(endpoint.String())
-	}
+	//if method == "POST" {
+	//	r, err = compute.httpClient.Post(endpoint.String())
+	//}
 
 	if err != nil {
 		return err
@@ -1080,21 +1080,43 @@ type ImportKeyPairResp struct {
 // ImportKeyPair import a new key pair and returns response
 func (compute *Compute) ImportKeyPair(KeyName string, PublicKeyMaterial string) (resp *ImportKeyPairResp, err error) {
 	params := makeParams("ImportKeyPair")
+	params["Description"] = "test"
 	params["KeyName"] = KeyName
 
 	b64PublicKeyMaterial := make([]byte, b64.EncodedLen(len([]byte(PublicKeyMaterial))))
 	b64.Encode(b64PublicKeyMaterial, []byte(PublicKeyMaterial))
 	params["PublicKeyMaterial"] = string(b64PublicKeyMaterial)
 
-	//params["Version"] = "2.2"
-	//params["Timestamp"] = timeNow().In(time.UTC).Format(time.RFC3339)
-	//endpoint, err := url.Parse(compute.Region.ComputeEndpoint)
-	//sign(compute.Auth, "POST", endpoint.Path, params, endpoint.Host)
-
 	resp = &ImportKeyPairResp{}
-	err = compute.query(params, resp, "POST")
-	if err == nil {
-		resp.KeyFingerprint = strings.TrimSpace(resp.KeyFingerprint)
+
+	params["Version"] = "2.2"
+	params["Timestamp"] = TimeStamp()
+	endpoint, err := url.Parse(compute.Region.ComputeEndpoint)
+	if err != nil {
+		return err
+	}
+	if endpoint.Path == "" {
+		endpoint.Path = "/"
+	}
+	sign(compute.Auth, method, endpoint.Path, params, endpoint.Host)
+	endpoint.RawQuery = multimap(params).Encode()
+	if debug {
+		log.Printf("get { %v } -> {\n", endpoint.String())
+	}
+
+	var r *http.Response
+
+	r, err = compute.httpClient.Get(endpoint.String())
+
+	if err != nil {
+		return err
+	}
+	defer r.Body.Close()
+
+	if debug {
+		dump, _ := httputil.DumpResponse(r, true)
+		log.Printf("response:\n")
+		log.Printf("%v\n}\n", string(dump))
 	}
 
 	return
@@ -1189,6 +1211,7 @@ type SecurityGroupInfo struct {
 // See http://cloud.nifty.com/api/rest/AuthorizeSecurityGroupIngress.htm for more details.
 type IPPerm struct {
 	Protocol     string              `xml:"ipProtocol"`
+	InOut        string              `xml:"inOut"`
 	FromPort     int                 `xml:"fromPort"`
 	ToPort       int                 `xml:"toPort"`
 	SourceIPs    []string            `xml:"ipRanges>item>cidrIp"`
@@ -1306,6 +1329,7 @@ func (compute *Compute) authOrRevoke(op string, group SecurityGroup, perms []IPP
 		params[prefix+".IpProtocol"] = perm.Protocol
 		params[prefix+".FromPort"] = strconv.Itoa(perm.FromPort)
 		params[prefix+".ToPort"] = strconv.Itoa(perm.ToPort)
+		params[prefix+".InOut"] = perm.InOut
 		for j, ip := range perm.SourceIPs {
 			params[prefix+".IpRanges."+strconv.Itoa(j+1)+".CidrIp"] = ip
 		}
