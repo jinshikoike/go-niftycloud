@@ -138,20 +138,26 @@ func (compute *Compute) query(params map[string]string, resp interface{}, method
 		endpoint.Path = "/"
 	}
 	sign(compute.Auth, method, endpoint.Path, params, endpoint.Host)
-	endpoint.RawQuery = multimap(params).Encode()
-	if debug {
-		log.Printf("get { %v } -> {\n", endpoint.String())
-	}
 
 	var r *http.Response
 
-	//if method == "GET" {
-	r, err = compute.httpClient.Get(endpoint.String())
-	//}
-
-	//if method == "POST" {
-	//	r, err = compute.httpClient.Post(endpoint.String())
-	//}
+	if method == "GET" {
+		endpoint.RawQuery = multimap(params).Encode()
+		if debug {
+			log.Printf("get { %v } -> {\n", endpoint.String())
+		}
+		r, err = compute.httpClient.Get(endpoint.String())
+	}
+	if method == "POST" {
+		postValues := url.Values{}
+		for key, val := range params {
+			postValues.Add(key, val)
+		}
+		if debug {
+			log.Printf("post { %v -d %v} -> {\n", compute.Region.ComputeEndpoint, postValues.Encode())
+		}
+		r, err = http.PostForm(compute.Region.ComputeEndpoint, postValues)
+	}
 
 	if err != nil {
 		return err
@@ -1088,38 +1094,11 @@ func (compute *Compute) ImportKeyPair(KeyName string, PublicKeyMaterial string) 
 	params["PublicKeyMaterial"] = string(b64PublicKeyMaterial)
 
 	resp = &ImportKeyPairResp{}
-
-	params["Version"] = "2.2"
-	params["Timestamp"] = TimeStamp()
-	endpoint, err := url.Parse(compute.Region.ComputeEndpoint)
-	if err != nil {
-		return err
+	err = compute.query(params, resp, "POST")
+	if err == nil {
+		resp.KeyFingerprint = strings.TrimSpace(resp.KeyFingerprint)
 	}
-	if endpoint.Path == "" {
-		endpoint.Path = "/"
-	}
-	sign(compute.Auth, method, endpoint.Path, params, endpoint.Host)
-	endpoint.RawQuery = multimap(params).Encode()
-	if debug {
-		log.Printf("get { %v } -> {\n", endpoint.String())
-	}
-
-	var r *http.Response
-
-	r, err = compute.httpClient.Get(endpoint.String())
-
-	if err != nil {
-		return err
-	}
-	defer r.Body.Close()
-
-	if debug {
-		dump, _ := httputil.DumpResponse(r, true)
-		log.Printf("response:\n")
-		log.Printf("%v\n}\n", string(dump))
-	}
-
-	return
+	return resp, nil
 }
 
 // DeleteKeyPair deletes a key pair.
