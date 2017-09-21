@@ -1083,14 +1083,19 @@ type ImportKeyPairResp struct {
 	KeyFingerprint string `xml:keyFingerprint`
 }
 
-// ImportKeyPair import a new key pair and returns response
-func (compute *Compute) ImportKeyPair(KeyName string, PublicKeyMaterial string) (resp *ImportKeyPairResp, err error) {
-	params := makeParams("ImportKeyPair")
-	params["Description"] = "test"
-	params["KeyName"] = KeyName
+type ImportKeyOpts struct {
+  KeyName string
+  PublicKeyMaterial string
+  Description string
+}
 
-	b64PublicKeyMaterial := make([]byte, b64.EncodedLen(len([]byte(PublicKeyMaterial))))
-	b64.Encode(b64PublicKeyMaterial, []byte(PublicKeyMaterial))
+// ImportKeyPair import a new key pair and returns response
+func (compute *Compute) ImportKeyPair(opts *ImportKeyOpts) (resp *ImportKeyPairResp, err error) {
+	params := makeParams("ImportKeyPair")
+	params["KeyName"] = opts.KeyName
+  params["Description"] = opts.Description
+	b64PublicKeyMaterial := make([]byte, b64.EncodedLen(len([]byte(opts.PublicKeyMaterial))))
+	b64.Encode(b64PublicKeyMaterial, []byte(opts.PublicKeyMaterial))
 	params["PublicKeyMaterial"] = string(b64PublicKeyMaterial)
 
 	resp = &ImportKeyPairResp{}
