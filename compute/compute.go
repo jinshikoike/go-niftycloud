@@ -124,7 +124,10 @@ type xmlErrors struct {
 
 var timeNow = time.Now
 
-func (compute *Compute) query(params map[string]string, resp interface{}) error {
+func (compute *Compute) query(params map[string]string, resp interface{}, method string) error {
+	if method == "" {
+		method = "GET"
+	}
 	params["Version"] = "2.2"
 	params["Timestamp"] = timeNow().In(time.UTC).Format(time.RFC3339)
 	endpoint, err := url.Parse(compute.Region.ComputeEndpoint)
@@ -134,13 +137,28 @@ func (compute *Compute) query(params map[string]string, resp interface{}) error 
 	if endpoint.Path == "" {
 		endpoint.Path = "/"
 	}
-	sign(compute.Auth, "GET", endpoint.Path, params, endpoint.Host)
-	endpoint.RawQuery = multimap(params).Encode()
-	if debug {
-		log.Printf("get { %v } -> {\n", endpoint.String())
+	sign(compute.Auth, method, endpoint.Path, params, endpoint.Host)
+
+	var r *http.Response
+
+	if method == "GET" {
+		endpoint.RawQuery = multimap(params).Encode()
+		if debug {
+			log.Printf("get { %v } -> {\n", endpoint.String())
+		}
+		r, err = compute.httpClient.Get(endpoint.String())
+	}
+	if method == "POST" {
+		postValues := url.Values{}
+		for key, val := range params {
+			postValues.Add(key, val)
+		}
+		if debug {
+			log.Printf("post { %v -d %v} -> {\n", compute.Region.ComputeEndpoint, postValues.Encode())
+		}
+		r, err = http.PostForm(compute.Region.ComputeEndpoint, postValues)
 	}
 
-	r, err := compute.httpClient.Get(endpoint.String())
 	if err != nil {
 		return err
 	}
@@ -371,7 +389,7 @@ func (compute *Compute) RunInstances(options *RunInstancesOptions) (resp *RunIns
 	}
 
 	resp = &RunInstancesResp{}
-	err = compute.query(params, resp)
+	err = compute.query(params, resp, "GET")
 	if err != nil {
 		return nil, err
 	}
@@ -420,7 +438,7 @@ func (compute *Compute) TerminateInstances(instIds []string) (resp *TerminateIns
 	params := makeParams("TerminateInstances")
 	addParamsList(params, "InstanceId", instIds)
 	resp = &TerminateInstancesResp{}
-	err = compute.query(params, resp)
+	err = compute.query(params, resp, "GET")
 	if err != nil {
 		return nil, err
 	}
@@ -456,7 +474,7 @@ func (compute *Compute) DescribeInstances(instIds []string, filter *Filter) (res
 	addParamsList(params, "InstanceId", instIds)
 	filter.addParams(params)
 	resp = &DescribeInstancesResp{}
-	err = compute.query(params, resp)
+	err = compute.query(params, resp, "GET")
 	if err != nil {
 		return nil, err
 	}
@@ -534,7 +552,7 @@ func (compute *Compute) AttachVolume(volumeId string, instanceId string, device 
 	params["Device"] = device
 
 	resp = &AttachVolumeResp{}
-	err = compute.query(params, resp)
+	err = compute.query(params, resp, "GET")
 	if err != nil {
 		return nil, err
 	}
@@ -559,7 +577,7 @@ func (compute *Compute) CreateVolume(options *CreateVolume) (resp *CreateVolumeR
 	}
 
 	resp = &CreateVolumeResp{}
-	err = compute.query(params, resp)
+	err = compute.query(params, resp, "GET")
 	if err != nil {
 		return nil, err
 	}
@@ -573,7 +591,7 @@ func (compute *Compute) DeleteVolume(id string) (resp *SimpleResp, err error) {
 	params["VolumeId"] = id
 
 	resp = &SimpleResp{}
-	err = compute.query(params, resp)
+	err = compute.query(params, resp, "GET")
 	if err != nil {
 		return nil, err
 	}
@@ -586,7 +604,7 @@ func (compute *Compute) DetachVolume(id string) (resp *SimpleResp, err error) {
 	params["VolumeId"] = id
 
 	resp = &SimpleResp{}
-	err = compute.query(params, resp)
+	err = compute.query(params, resp, "GET")
 	if err != nil {
 		return nil, err
 	}
@@ -599,7 +617,7 @@ func (compute *Compute) Volumes(volIds []string, filter *Filter) (resp *VolumesR
 	addParamsList(params, "VolumeId", volIds)
 	filter.addParams(params)
 	resp = &VolumesResp{}
-	err = compute.query(params, resp)
+	err = compute.query(params, resp, "GET")
 	if err != nil {
 		return nil, err
 	}
@@ -640,7 +658,7 @@ func (compute *Compute) DescribeAvailabilityZones(filter *Filter) (resp *Describ
 	params := makeParams("DescribeAvailabilityZones")
 	filter.addParams(params)
 	resp = &DescribeAvailabilityZonesResp{}
-	err = compute.query(params, resp)
+	err = compute.query(params, resp, "GET")
 	if err != nil {
 		return nil, err
 	}
@@ -706,7 +724,7 @@ func (compute *Compute) AllocateAddress(options *AllocateAddress) (resp *Allocat
 	params["Domain"] = options.Domain
 
 	resp = &AllocateAddressResp{}
-	err = compute.query(params, resp)
+	err = compute.query(params, resp, "GET")
 	if err != nil {
 		return nil, err
 	}
@@ -720,7 +738,7 @@ func (compute *Compute) ReleasePublicAddress(publicIp string) (resp *SimpleResp,
 	params["PublicIp"] = publicIp
 
 	resp = &SimpleResp{}
-	err = compute.query(params, resp)
+	err = compute.query(params, resp, "GET")
 	if err != nil {
 		return nil, err
 	}
@@ -743,7 +761,7 @@ func (compute *Compute) AssociateAddress(options *AssociateAddress) (resp *Assoc
 	}
 
 	resp = &AssociateAddressResp{}
-	err = compute.query(params, resp)
+	err = compute.query(params, resp, "GET")
 	if err != nil {
 		return nil, err
 	}
@@ -757,7 +775,7 @@ func (compute *Compute) DisassociateAddress(id string) (resp *SimpleResp, err er
 	params["AssociationId"] = id
 
 	resp = &SimpleResp{}
-	err = compute.query(params, resp)
+	err = compute.query(params, resp, "GET")
 	if err != nil {
 		return nil, err
 	}
@@ -771,7 +789,7 @@ func (compute *Compute) DisassociateAddressClassic(ip string) (resp *SimpleResp,
 	params["PublicIp"] = ip
 
 	resp = &SimpleResp{}
-	err = compute.query(params, resp)
+	err = compute.query(params, resp, "GET")
 	if err != nil {
 		return nil, err
 	}
@@ -790,7 +808,7 @@ func (compute *Compute) Addresses(publicIps []string, allocationIds []string, fi
 	addParamsList(params, "AllocationId", allocationIds)
 	filter.addParams(params)
 	resp = &DescribeAddressesResp{}
-	err = compute.query(params, resp)
+	err = compute.query(params, resp, "GET")
 	if err != nil {
 		return nil, err
 	}
@@ -903,7 +921,7 @@ func (compute *Compute) CreateImage(options *CreateImage) (resp *CreateImageResp
 	addBlockDeviceParams("", params, options.BlockDevices)
 
 	resp = &CreateImageResp{}
-	err = compute.query(params, resp)
+	err = compute.query(params, resp, "GET")
 	if err != nil {
 		return nil, err
 	}
@@ -929,7 +947,7 @@ func (compute *Compute) Images(ids []string, filter *Filter) (resp *ImagesResp, 
 	filter.addParams(params)
 
 	resp = &ImagesResp{}
-	err = compute.query(params, resp)
+	err = compute.query(params, resp, "GET")
 	if err != nil {
 		return nil, err
 	}
@@ -958,7 +976,7 @@ func (compute *Compute) ImagesByOwners(ids []string, owners []string, filter *Fi
 	filter.addParams(params)
 
 	resp = &ImagesResp{}
-	err = compute.query(params, resp)
+	err = compute.query(params, resp, "GET")
 	if err != nil {
 		return nil, err
 	}
@@ -989,7 +1007,7 @@ func (compute *Compute) ModifyImageAttribute(imageId string, options *ModifyImag
 	}
 
 	resp = &SimpleResp{}
-	err = compute.query(params, resp)
+	err = compute.query(params, resp, "GET")
 	if err != nil {
 		resp = nil
 	}
@@ -1016,7 +1034,7 @@ func (compute *Compute) NiftyAssociateImage(options *NiftyAssociateImage) (resp 
 	}
 
 	resp = &NiftyAssociateImageResp{}
-	err = compute.query(params, resp)
+	err = compute.query(params, resp, "GET")
 	if err != nil {
 		return nil, err
 	}
@@ -1052,11 +1070,40 @@ func (compute *Compute) CreateKeyPair(keyName string) (resp *CreateKeyPairResp, 
 	params["KeyName"] = keyName
 
 	resp = &CreateKeyPairResp{}
-	err = compute.query(params, resp)
+	err = compute.query(params, resp, "GET")
 	if err == nil {
 		resp.KeyFingerprint = strings.TrimSpace(resp.KeyFingerprint)
 	}
 	return
+}
+
+type ImportKeyPairResp struct {
+	RequestId      string `xml:"requestId"`
+	KeyName        string `xml:"keyName"`
+	KeyFingerprint string `xml:keyFingerprint`
+}
+
+type ImportKeyOpts struct {
+  KeyName string
+  PublicKeyMaterial string
+  Description string
+}
+
+// ImportKeyPair import a new key pair and returns response
+func (compute *Compute) ImportKeyPair(opts *ImportKeyOpts) (resp *ImportKeyPairResp, err error) {
+	params := makeParams("ImportKeyPair")
+	params["KeyName"] = opts.KeyName
+  params["Description"] = opts.Description
+	b64PublicKeyMaterial := make([]byte, b64.EncodedLen(len([]byte(opts.PublicKeyMaterial))))
+	b64.Encode(b64PublicKeyMaterial, []byte(opts.PublicKeyMaterial))
+	params["PublicKeyMaterial"] = string(b64PublicKeyMaterial)
+
+	resp = &ImportKeyPairResp{}
+	err = compute.query(params, resp, "POST")
+	if err == nil {
+		resp.KeyFingerprint = strings.TrimSpace(resp.KeyFingerprint)
+	}
+	return resp, nil
 }
 
 // DeleteKeyPair deletes a key pair.
@@ -1067,7 +1114,7 @@ func (compute *Compute) DeleteKeyPair(name string) (resp *SimpleResp, err error)
 	params["KeyName"] = name
 
 	resp = &SimpleResp{}
-	err = compute.query(params, resp)
+	err = compute.query(params, resp, "GET")
 	return
 }
 
@@ -1082,7 +1129,7 @@ func (compute *Compute) KeyPairs(keynames []string, filter *Filter) (resp *KeyPa
 	filter.addParams(params)
 
 	resp = &KeyPairsResp{}
-	err = compute.query(params, resp)
+	err = compute.query(params, resp, "GET")
 	if err != nil {
 		return nil, err
 	}
@@ -1116,7 +1163,7 @@ func (compute *Compute) CreateSecurityGroup(group SecurityGroup) (resp *CreateSe
 	params["GroupDescription"] = group.Description
 
 	resp = &CreateSecurityGroupResp{}
-	err = compute.query(params, resp)
+	err = compute.query(params, resp, "GET")
 	if err != nil {
 		return nil, err
 	}
@@ -1148,6 +1195,7 @@ type SecurityGroupInfo struct {
 // See http://cloud.nifty.com/api/rest/AuthorizeSecurityGroupIngress.htm for more details.
 type IPPerm struct {
 	Protocol     string              `xml:"ipProtocol"`
+	InOut        string              `xml:"inOut"`
 	FromPort     int                 `xml:"fromPort"`
 	ToPort       int                 `xml:"toPort"`
 	SourceIPs    []string            `xml:"ipRanges>item>cidrIp"`
@@ -1211,7 +1259,7 @@ func (compute *Compute) SecurityGroups(groups []SecurityGroup, filter *Filter) (
 	filter.addParams(params)
 
 	resp = &SecurityGroupsResp{}
-	err = compute.query(params, resp)
+	err = compute.query(params, resp, "GET")
 	if err != nil {
 		return nil, err
 	}
@@ -1230,7 +1278,7 @@ func (compute *Compute) DeleteSecurityGroup(group SecurityGroup) (resp *SimpleRe
 	}
 
 	resp = &SimpleResp{}
-	err = compute.query(params, resp)
+	err = compute.query(params, resp, "GET")
 	if err != nil {
 		return nil, err
 	}
@@ -1265,6 +1313,7 @@ func (compute *Compute) authOrRevoke(op string, group SecurityGroup, perms []IPP
 		params[prefix+".IpProtocol"] = perm.Protocol
 		params[prefix+".FromPort"] = strconv.Itoa(perm.FromPort)
 		params[prefix+".ToPort"] = strconv.Itoa(perm.ToPort)
+		params[prefix+".InOut"] = perm.InOut
 		for j, ip := range perm.SourceIPs {
 			params[prefix+".IpRanges."+strconv.Itoa(j+1)+".CidrIp"] = ip
 		}
@@ -1282,7 +1331,7 @@ func (compute *Compute) authOrRevoke(op string, group SecurityGroup, perms []IPP
 	}
 
 	resp = &SimpleResp{}
-	err = compute.query(params, resp)
+	err = compute.query(params, resp, "GET")
 	if err != nil {
 		return nil, err
 	}
@@ -1328,7 +1377,7 @@ func (compute *Compute) StartInstances(ids ...string) (resp *StartInstanceResp, 
 	params := makeParams("StartInstances")
 	addParamsList(params, "InstanceId", ids)
 	resp = &StartInstanceResp{}
-	err = compute.query(params, resp)
+	err = compute.query(params, resp, "GET")
 	if err != nil {
 		return nil, err
 	}
@@ -1345,7 +1394,7 @@ func (compute *Compute) StopInstances(options *StopInstancesOptions) (resp *Stop
 		params["Force"] = "true"
 	}
 	resp = &StopInstanceResp{}
-	err = compute.query(params, resp)
+	err = compute.query(params, resp, "GET")
 	if err != nil {
 		return nil, err
 	}
@@ -1366,7 +1415,7 @@ func (compute *Compute) RebootInstances(options *RebootInstancesOptions) (resp *
 		params["Force"] = "true"
 	}
 	resp = &SimpleResp{}
-	err = compute.query(params, resp)
+	err = compute.query(params, resp, "GET")
 	if err != nil {
 		return nil, err
 	}
@@ -1426,7 +1475,7 @@ func (compute *Compute) ModifyInstance(instId string, options *ModifyInstance) (
 	}
 
 	resp = &ModifyInstanceResp{}
-	err = compute.query(params, resp)
+	err = compute.query(params, resp, "GET")
 	if err != nil {
 		resp = nil
 	}
